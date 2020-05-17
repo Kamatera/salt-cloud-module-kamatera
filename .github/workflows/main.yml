@@ -57,7 +57,7 @@ jobs:
         fi &&\
         export SALT_BIN_DIR="$(dirname $(which salt-cloud))" &&\
         echo SALT_BIN_DIR=$SALT_BIN_DIR &&\
-        sudo python3 tests/e2e_test.py
+        sudo -E python3 tests/e2e_test.py
   publish:
     runs-on: ubuntu-18.04
     needs: tests

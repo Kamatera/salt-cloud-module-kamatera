@@ -54,6 +54,11 @@ jobs:
         fi &&\
         export SALT_BIN_DIR="$(dirname $(which salt-cloud))" &&\
         echo SALT_BIN_DIR=$SALT_BIN_DIR &&\
+        if [ "${SALT}" == "" ] && [ "${PYTHON}" == "python3" ]; then
+          export CREATE_SERVER_NAME="salttest"
+        else
+          export CREATE_SERVER_NAME=""
+        fi &&\
         sudo -E python3 tests/e2e_test.py
   publish:
     runs-on: ubuntu-18.04

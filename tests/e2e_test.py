@@ -58,6 +58,11 @@ assert len(images) > 10
 assert images["IL:6000C29a5a7220dcf84716e7bba74215"] == "Ubuntu Server version 18.04 LTS (bionic) 64-bit"
 print("OK")
 
+CREATE_SERVER_NAME = os.environ.get("CREATE_SERVER_NAME")
+if not CREATE_SERVER_NAME:
+    print("Skipping create server tests")
+    exit(0)
+
 os.makedirs("/etc/salt/cloud.profiles.d", exist_ok=True)
 if os.path.exists("/etc/salt/cloud.profiles.d/cloudcli-server-test.conf"):
     os.unlink("/etc/salt/cloud.profiles.d/cloudcli-server-test.conf")
@@ -85,7 +90,7 @@ cloudcli-server-test:
 
 print("creating server...")
 with open(os.path.join(outputdir, "salt-create-server.json"), "wb") as f:
-    f.write(subprocess.check_output(["%s/salt-cloud" % os.environ["SALT_BIN_DIR"], "--out=json", "-p", "cloudcli-server-test", "salttest"]))
+    f.write(subprocess.check_output(["%s/salt-cloud" % os.environ["SALT_BIN_DIR"], "--out=json", "-p", "cloudcli-server-test", CREATE_SERVER_NAME]))
 
 with open(os.path.join(outputdir, "salt-create-server.json")) as f:
     jsonlines = None
@@ -94,7 +99,7 @@ with open(os.path.join(outputdir, "salt-create-server.json")) as f:
             jsonlines = ["{"]
         elif jsonlines is not None:
             jsonlines.append(line.strip())
-    created_server = json.loads("\n".join(jsonlines))["salttest"]
+    created_server = json.loads("\n".join(jsonlines))[CREATE_SERVER_NAME]
 assert created_server["deployed"] == True
 created_server_name = created_server["name"]
 print("created_server_name = " + created_server_name)

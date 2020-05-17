@@ -36,6 +36,7 @@ jobs:
     - env:
         KAMATERA_API_CLIENT_ID: ${{ secrets.KAMATERA_API_CLIENT_ID }}
         KAMATERA_API_SECRET: ${{ secrets.KAMATERA_API_SECRET }}
+        KAMATERA_API_URL: "https://cloudcli.cloudwm.com"
         PYTHON: ${{ matrix.python }}
         SALT: ${{ matrix.salt }}
       run: |

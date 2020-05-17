@@ -1,0 +1,78 @@
+name: CI
+on:
+  push:
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION="$(echo $GITHUB_REF | sed -e 's:refs/tags/::')"
+        else
+          VERSION=0.0.0
+        fi &&\
+        echo VERSION=$VERSION &&\
+        sudo apt-get install -y python3-setuptools python3-wheel &&\
+        sed -i "s/0.0.0/$VERSION/" setup.py &&\
+        python3 setup.py sdist bdist_wheel &&\
+        echo $VERSION > dist/VERSION
+    - uses: actions/upload-artifact@v1
+      with:
+        name: dist
+        path: dist
+  tests:
+    runs-on: ubuntu-18.04
+    needs: build
+    strategy:
+      matrix:
+        python: ["python2", "python3"]
+        salt: ["2019.2.0", "2019.2.5", "3000", "latest"]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/download-artifact@v1
+      with:
+        name: dist
+    - env:
+        KAMATERA_API_CLIENT_ID: ${{ secrets.KAMATERA_API_CLIENT_ID }}
+        KAMATERA_API_SECRET: ${{ secrets.KAMATERA_API_SECRET }}
+        PYTHON: ${{ matrix.python }}
+        SALT: ${{ matrix.salt }}
+      run: |
+        if [ "${PYTHON}" == "python2" ]; then
+          sudo apt-get install -y python-setuptools python-wheel
+        else
+          sudo apt-get install -y $PYTHON-setuptools $PYTHON-wheel
+        fi &&\
+        if [ "${SALT}" == "latest" ]; then
+          $PYTHON -m pip install salt
+        else
+          $PYTHON -m pip install salt==$SALT
+        fi &&\
+        VERSION=`cat dist/VERSION` &&\
+        if [ "${PYTHON}" == "python2" ]; then
+          python2 -m pip install "dist/salt_cloud_module_kamatera-${VERSION}.tar.gz"
+        else
+          python3 -m pip install "dist/salt_cloud_module_kamatera-${VERSION}-py3-none-any.whl"
+        fi &&\
+        export SALT_BIN_DIR="$(dirname $(which salt-cloud))" &&\
+        echo SALT_BIN_DIR=$SALT_BIN_DIR &&\
+        python3 tests/e2e_test.py
+  publish:
+    runs-on: ubuntu-18.04
+    needs: tests
+    steps:
+    - uses: actions/download-artifact@v1
+      with:
+        name: dist
+    - env:
+        TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+        TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION="$(echo $GITHUB_REF | sed -e 's:refs/tags/::')" &&\
+          echo VERSION=$VERSION &&\
+          sudo apt-get install -y python3-setuptools python3-wheel &&\
+          python3 -m pip install twine &&\
+          twine upload --non-interactive "dist/salt_cloud_module_kamatera-${VERSION}.tar.gz" "dist/salt_cloud_module_kamatera-${VERSION}-py3-none-any.whl"
+        fi

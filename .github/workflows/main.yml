@@ -27,7 +27,7 @@ jobs:
     strategy:
       matrix:
         python: ["python2", "python3"]
-        salt: ["2019.2.0", "2019.2.5", "3000", "latest"]
+        salt: ["<3000", "==3000", ""]
     steps:
     - uses: actions/checkout@v2
     - uses: actions/download-artifact@v1
@@ -45,11 +45,7 @@ jobs:
         else
           sudo apt-get install -y $PYTHON-setuptools $PYTHON-wheel
         fi &&\
-        if [ "${SALT}" == "latest" ]; then
-          sudo $PYTHON -m pip install salt
-        else
-          sudo $PYTHON -m pip install salt==$SALT
-        fi &&\
+        sudo $PYTHON -m pip install "salt${SALT}" &&\
         VERSION=`cat dist/VERSION` &&\
         if [ "${PYTHON}" == "python2" ]; then
           sudo python2 -m pip install "dist/salt_cloud_module_kamatera-${VERSION}.tar.gz"
